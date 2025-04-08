@@ -4,10 +4,15 @@
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ExifDateSetterWindows"
+        d:DataContext="{d:DesignInstance viewmodel:MainViewModel, IsDesignTimeCreatable=True}"
+        xmlns:converters="clr-namespace:ExifDateSetterWindows.Converters"
+        xmlns:viewmodel="clr-namespace:ExifDateSetterWindows.ViewModels"
         SizeToContent="Height"
         mc:Ignorable="d"
         Title="EXIF DATE SETTER" Width="640">
+    <mah:MetroWindow.Resources>
+        <converters:ActionsDisplayConverter x:Key="ActionsDisplayConverter"></converters:ActionsDisplayConverter>
+    </mah:MetroWindow.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -20,6 +25,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
+        
         
         <GroupBox Grid.Row="0"
                   Margin="2"
@@ -91,12 +97,15 @@
                            Text="Action"></TextBlock>
                 <ComboBox Grid.Row="0" 
                           Grid.Column="1"
+                          ItemsSource="{Binding ActionList}"
+                          SelectedItem="{Binding SelectedAction}"
                           SelectedIndex="0"
                           Margin="5">
-                    <ComboBox.Items>
-                        <ComboBoxItem>EXIF Tag &gt; File Attribute</ComboBoxItem>
-                        <ComboBoxItem>EXIF Tag &gt; File Attribute</ComboBoxItem>    
-                    </ComboBox.Items>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource ActionsDisplayConverter}}"></TextBlock>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
                 </ComboBox>
                 
                 <TextBlock Grid.Row="0"
@@ -109,7 +118,7 @@
                           IsEditable="False"
                           IsTextSearchEnabled="True"
                           SelectedIndex="0"
-                          
+                          ItemsSource="{Binding SupportedFileTypesList}"
                           Margin="5">
                 </mah:MultiSelectionComboBox>
                 
@@ -121,10 +130,9 @@
                 <ComboBox Grid.Row="1" 
                           Grid.Column="1"
                           SelectedIndex="0"
+                          ItemsSource="{Binding ExifDateTagsList}"
+                          SelectedItem="{Binding SelectedExifDateTag}"
                           Margin="5">
-                    <ComboBox.Items>
-                        <ComboBoxItem>DateTaken</ComboBoxItem>
-                    </ComboBox.Items>
                 </ComboBox>
                 
                 <TextBlock Grid.Row="1"
@@ -135,10 +143,9 @@
                 <ComboBox Grid.Row="1" 
                           Grid.Column="3"
                           SelectedIndex="0"
+                          ItemsSource="{Binding FileDateAttributesList}"
+                          SelectedItem="{Binding SelectedFileDateAttribute}"
                           Margin="5">
-                    <ComboBox.Items>
-                        <ComboBoxItem>DateCreated</ComboBoxItem>
-                    </ComboBox.Items>
                 </ComboBox>
                 
                 <TextBlock Grid.Row="2"
