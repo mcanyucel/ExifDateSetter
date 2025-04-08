@@ -2,6 +2,6 @@
 
 public record ExifAnalysisResult(    
     int NumberOfFilesWithExifDate,
-    DateTime MinimumExifDate,
-    DateTime MaximumExifDate
+    DateOnly MinimumExifDate,
+    DateOnly MaximumExifDate
     );

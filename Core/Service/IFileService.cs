@@ -4,5 +4,5 @@ namespace Core.Service;
 
 public interface IFileService
 {
-    public Task<FileAnalysisResult> AnalyzeFiles(IEnumerable<string> filePaths, CancellationToken ct, FileDateAttribute dateAttribute, int maxNumberOfThreads);
+    public Task<FileAnalysisResult> AnalyzeFiles(List<string> filePaths, FileDateAttribute dateAttribute, int maxNumberOfThreads, CancellationToken ct);
 }

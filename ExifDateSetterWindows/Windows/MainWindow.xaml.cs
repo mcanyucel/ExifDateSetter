@@ -114,6 +114,8 @@ public partial class MainWindow
         {
             throw new InvalidOperationException("Drag and drop operation failed");
         }
+        // filter out the files that are do not have valid extensions selected by the user
+        _newFileNameList = _newFileNameList.Where(_vm.IsValidFileExtension).ToList();
         _vm.UpdateFilesAndFolders(_newFileNameList, _newFolderNameList, _existingFileNameList, _existingFolderNameList);
         FileDragDrop_OnDragLeave(sender, e);
     }

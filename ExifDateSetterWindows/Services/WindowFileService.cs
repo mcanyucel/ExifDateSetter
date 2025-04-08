@@ -7,7 +7,7 @@ namespace ExifDateSetterWindows.Services;
 
 public class WindowFileService : IFileService
 {
-    public Task<FileAnalysisResult> AnalyzeFiles(IEnumerable<string> filePaths, CancellationToken ct, FileDateAttribute dateAttribute, int maxNumberOfThreads)
+    public Task<FileAnalysisResult> AnalyzeFiles(List<string> filePaths, FileDateAttribute dateAttribute, int maxNumberOfThreads, CancellationToken ct)
     {
         if (ct.IsCancellationRequested) return Task.FromCanceled<FileAnalysisResult>(ct);
         
@@ -18,16 +18,24 @@ public class WindowFileService : IFileService
          * partitioning the file list into smaller chunks and processing them in parallel, as we should not use
          * global locks in parallel processing.
          */
-        Parallel.ForEach(filePaths, parallelOptions, filePath =>
+
+        switch (dateAttribute)
         {
-            var date = dateAttribute switch
-            {
-                FileDateAttribute.DateCreated => File.GetCreationTime(filePath),
-                FileDateAttribute.DateModified => File.GetLastWriteTime(filePath),
-                _ => throw new ArgumentOutOfRangeException(nameof(dateAttribute), dateAttribute, null)
-            };
-            dates.Add(DateOnly.FromDateTime(date));
-        });
+            case FileDateAttribute.DateCreated:
+                Parallel.ForEach(filePaths, parallelOptions, filePath =>
+                {
+                    dates.Add(DateOnly.FromDateTime(File.GetCreationTime(filePath)));
+                });
+                break;
+            case FileDateAttribute.DateModified:
+                Parallel.ForEach(filePaths, parallelOptions, filePath =>
+                {
+                    dates.Add(DateOnly.FromDateTime(File.GetLastWriteTime(filePath)));
+                });
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(dateAttribute), dateAttribute, null);
+        }
         var minimumDate = dates.Min();
         var maximumDate = dates.Max();
         return Task.FromResult(new FileAnalysisResult(minimumDate, maximumDate));
