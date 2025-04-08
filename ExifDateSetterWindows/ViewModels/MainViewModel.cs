@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Core.Service;
 using ExifDateSetterWindows.Model;
 
 namespace ExifDateSetterWindows.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel(IFileService _fileService, IFileSystemService _fileSystemService) : ObservableObject
 {
     
 #pragma warning disable CA1822
@@ -23,18 +25,38 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _selectedNumberOfThreads;
     [ObservableProperty] private bool _isFolderSearchRecursive = true;
     [ObservableProperty] private bool _isIndeterminateBusy;
+    [ObservableProperty] private string? _fileAndFolderCountStatus;
 
-    public void AddFiles(IEnumerable<string> fileNamesWithoutFolders)
+    private readonly List<string> _folders = [];
+    private readonly List<string> _files = [];
+    
+    private void UpdateFileAndFolderCountStatus()
     {
-        System.Diagnostics.Debug.WriteLine($"AddFiles: {fileNamesWithoutFolders.Count()}");
+        var fileCount = _files.Count;
+        var folderCount = _folders.Count;
+        if (fileCount != 0 || folderCount != 0)
+            FileAndFolderCountStatus = $"{fileCount} files and {folderCount} folders selected";
+        else
+            FileAndFolderCountStatus = null;
+    }
+    
+    public void UpdateFilesAndFolders(IEnumerable<string> newFilesList, IEnumerable<string> newFoldersList, List<string> existingFileNameList, List<string> existingFolderNameList)
+    {
+        _files.RemoveAll(existingFileNameList.Contains);
+        _folders.RemoveAll(existingFolderNameList.Contains);
+        _files.AddRange(newFilesList);
+        _folders.AddRange(newFoldersList);
+        UpdateFileAndFolderCountStatus();
     }
 
-    public void AddFolders(IEnumerable<string> folderNames)
+    public bool ContainsFileOrFolder(string fileName)
     {
-        System.Diagnostics.Debug.WriteLine($"AddFolders: {folderNames.Count()}");
+        return _files.Contains(fileName) ||
+               _folders.Contains(fileName);
     }
 
-    public void ProcessFolder(string folderPath, bool isRecursive)
+    [RelayCommand]
+    private async Task Analyze()
     {
         
     }
