@@ -213,6 +213,7 @@
                 <Button Grid.Row="0"
                         Grid.Column="0"
                         Margin="5"
+                        Command="{Binding AnalyzeCommand}"
                         Content="Analyze"></Button>
                 
                 <TextBlock Grid.Row="0"

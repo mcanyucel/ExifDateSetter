@@ -1,11 +1,12 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Collections.Concurrent;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.Service;
 using ExifDateSetterWindows.Model;
 
 namespace ExifDateSetterWindows.ViewModels;
 
-public partial class MainViewModel(IFileService _fileService, IFileSystemService _fileSystemService) : ObservableObject
+public partial class MainViewModel(IFileService fileService, IFileSystemService fileSystemService) : ObservableObject
 {
     
 #pragma warning disable CA1822
@@ -58,6 +59,31 @@ public partial class MainViewModel(IFileService _fileService, IFileSystemService
     [RelayCommand]
     private async Task Analyze()
     {
+        var cts = new CancellationTokenSource();
+        // flatten all the folders into files list
+        ConcurrentDictionary<string, byte> allFiles = [];
+        /*
+         * We use dictionary to have unique file names with maximum performance:
+         * 1. Thread-safe with automatic deduplication
+         * 2. O(1) lookups - no performance hit inside loops
+         * 3. Maintains full parallelism
+         * 4. No post-processing required
+         *  -. Slightly higher memory usage
+         */
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = SelectedNumberOfThreads == 0 ? -1 : SelectedNumberOfThreads,
+            CancellationToken = cts.Token
+        };
+        await Parallel.ForEachAsync(_folders, parallelOptions, async (folder, token) =>
+        {
+            var files = await fileSystemService.GetFilesFromFolder(folder, token, null, IsFolderSearchRecursive);
+            foreach (var file in files)
+            {
+                allFiles.TryAdd(file, 0); // Value doesn't matter
+            }
+        });
         
+        System.Diagnostics.Debug.WriteLine($"Found {allFiles.Count} files");
     }
 }
