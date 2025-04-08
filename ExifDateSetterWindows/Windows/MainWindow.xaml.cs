@@ -1,4 +1,7 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
+using ExifDateSetterWindows.Model;
+using ExifDateSetterWindows.ViewModels;
 
 namespace ExifDateSetterWindows.Windows;
 
@@ -7,10 +10,11 @@ namespace ExifDateSetterWindows.Windows;
 /// </summary>
 public partial class MainWindow
 {
+    private readonly MainViewModel _vm;
     public MainWindow()
     {
-        var vm = new ViewModels.MainViewModel();
-        DataContext = vm;
+        _vm = new MainViewModel();
+        DataContext = _vm;
         InitializeComponent();
     }
 }

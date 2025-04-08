@@ -53,6 +53,7 @@
                 <CheckBox Grid.Row="0"
                           Grid.Column="2"
                           Margin="5"
+                          IsChecked="{Binding IsFolderSearchRecursive}"
                           Content="Include Subdirectories"></CheckBox>
                 <Rectangle Grid.Row="1"
                            Grid.Column="0"
@@ -63,7 +64,8 @@
                            StrokeDashArray="6"></Rectangle>
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
-                           Grid.ColumnSpan="3" 
+                           Grid.ColumnSpan="3"
+                           Name="TextBlockDragDrop"
                            Text="Add files by buttons above or drag and drop them here."
                            FontSize="16"
                            Foreground="DarkGray"
@@ -113,14 +115,21 @@
                            Margin="5"
                            VerticalAlignment="Center"
                            Text="File Types to Include"></TextBlock>
-                <mah:MultiSelectionComboBox Grid.Row="0" 
+                <ComboBox Grid.Row="0"
                           Grid.Column="3"
                           IsEditable="False"
                           IsTextSearchEnabled="True"
-                          SelectedIndex="0"
-                          ItemsSource="{Binding SupportedFileTypesList}"
+                          ItemsSource="{Binding FileTypeSelectionItems}"
                           Margin="5">
-                </mah:MultiSelectionComboBox>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsSelected}"></CheckBox>
+                                <TextBlock Text="{Binding SupportedFileType}"></TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
@@ -158,6 +167,7 @@
                 <DatePicker Grid.Row="2" 
                             Grid.Column="2" 
                             Grid.ColumnSpan="2" 
+                            SelectedDate="{Binding DefaultDateTime}"
                             Margin="5"></DatePicker>
             </Grid>
         </GroupBox>
@@ -170,7 +180,8 @@
                            VerticalAlignment="Center"
                            Margin="5"></TextBlock>
                 <mah:NumericUpDown Minimum="0"
-                                   Value="0"
+                                   Value="{Binding SelectedNumberOfThreads}"
+                                   Maximum="{Binding MaxNumberOfThreads}"
                                    Margin="5"></mah:NumericUpDown>
                 <TextBlock Text="(0 for Auto-Select)"
                            Margin="5"
