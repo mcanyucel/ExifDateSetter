@@ -57,6 +57,7 @@
                           Content="Include Subdirectories"></CheckBox>
                 <Rectangle Grid.Row="1"
                            Grid.Column="0"
+                           Name="RectangleDragDrop"
                            Margin="5"
                            Grid.ColumnSpan="3"
                            StrokeThickness="1"
@@ -66,6 +67,10 @@
                            Grid.Column="0"
                            Grid.ColumnSpan="3"
                            Name="TextBlockDragDrop"
+                           AllowDrop="True"
+                           DragEnter="FileDragDrop_OnDragEnter"
+                           DragLeave="FileDragDrop_OnDragLeave"
+                           Drop="FileDragDrop_OnDrop"
                            Text="Add files by buttons above or drag and drop them here."
                            FontSize="16"
                            Foreground="DarkGray"
@@ -232,6 +237,7 @@
         </GroupBox>
         <mah:MetroProgressBar Grid.Row="4"
                               Value="50"
+                              IsIndeterminate="{Binding IsIndeterminateBusy}"
                               Margin="5"
                               Height="16"></mah:MetroProgressBar>
     </Grid>

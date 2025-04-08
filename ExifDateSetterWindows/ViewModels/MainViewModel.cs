@@ -16,17 +16,26 @@ public partial class MainViewModel : ObservableObject
     public int MaxNumberOfThreads => Environment.ProcessorCount;
 #pragma warning restore CA1822
 
-    [ObservableProperty]
-    private Actions _selectedAction = Actions.ExifToFileDate;
-    [ObservableProperty]
-    private ExifDateTags _selectedExifDateTag = ExifDateTags.DateTimeOriginal;
-    [ObservableProperty]
-    private FileDateAttributes _selectedFileDateAttribute = FileDateAttributes.DateCreated;
-    [ObservableProperty]
-    private DateTime _defaultDateTime = DateTime.Now;
-    [ObservableProperty] 
-    private int _selectedNumberOfThreads;
-    [ObservableProperty] 
-    private bool _isFolderSearchRecursive = true;
+    [ObservableProperty] private Actions _selectedAction = Actions.ExifToFileDate;
+    [ObservableProperty] private ExifDateTags _selectedExifDateTag = ExifDateTags.DateTimeOriginal;
+    [ObservableProperty] private FileDateAttributes _selectedFileDateAttribute = FileDateAttributes.DateCreated;
+    [ObservableProperty] private DateTime _defaultDateTime = DateTime.Now;
+    [ObservableProperty] private int _selectedNumberOfThreads;
+    [ObservableProperty] private bool _isFolderSearchRecursive = true;
+    [ObservableProperty] private bool _isIndeterminateBusy;
 
+    public void AddFiles(IEnumerable<string> fileNamesWithoutFolders)
+    {
+        System.Diagnostics.Debug.WriteLine($"AddFiles: {fileNamesWithoutFolders.Count()}");
+    }
+
+    public void AddFolders(IEnumerable<string> folderNames)
+    {
+        System.Diagnostics.Debug.WriteLine($"AddFolders: {folderNames.Count()}");
+    }
+
+    public void ProcessFolder(string folderPath, bool isRecursive)
+    {
+        
+    }
 }
