@@ -1,6 +1,8 @@
-﻿namespace Core.Service;
+﻿using Core.Model;
 
-public class IFileService
+namespace Core.Service;
+
+public interface IFileService
 {
-    
+    public Task<FileAnalysisResult> AnalyzeFiles(IEnumerable<string> filePaths, CancellationToken ct, FileDateAttribute dateAttribute, int maxNumberOfThreads);
 }

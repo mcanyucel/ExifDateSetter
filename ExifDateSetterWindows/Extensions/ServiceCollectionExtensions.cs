@@ -26,4 +26,10 @@ internal static class ServiceCollectionExtensions
         serviceCollection.AddSingleton(Log.Logger);
         return serviceCollection;
     }
+    
+    public static IServiceCollection AddExifServices(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddTransient<IExifService, WindowsExifService>();
+        return serviceCollection;
+    }
 }
