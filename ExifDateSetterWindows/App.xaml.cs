@@ -49,6 +49,7 @@ public partial class App : Application
             .AddViewModels()
             .AddFileServices()
             .AddExifServices()
+            .AddDialogServices()
             .AddLoggerServices();
         return serviceCollection.BuildServiceProvider();
     }

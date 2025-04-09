@@ -1,4 +1,6 @@
-﻿namespace ExifDateSetterWindows.Model;
+﻿using Core.Model;
+
+namespace ExifDateSetterWindows.Model;
 
 public class FileTypeSelectionItem
 {

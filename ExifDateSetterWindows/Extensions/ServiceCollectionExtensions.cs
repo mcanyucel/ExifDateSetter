@@ -1,6 +1,8 @@
 ﻿using Core.Service;
 using ExifDateSetterWindows.Services;
 using ExifDateSetterWindows.ViewModels;
+using ExifDateSetterWindows.Windows;
+using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -13,7 +15,7 @@ internal static class ServiceCollectionExtensions
         serviceCollection.AddTransient<MainViewModel>();
         return serviceCollection;
     }
-    
+
     public static IServiceCollection AddFileServices(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddTransient<IFileService, WindowFileService>();
@@ -26,10 +28,18 @@ internal static class ServiceCollectionExtensions
         serviceCollection.AddSingleton(Log.Logger);
         return serviceCollection;
     }
-    
+
     public static IServiceCollection AddExifServices(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddTransient<IExifService, WindowsExifService>();
         return serviceCollection;
     }
+
+    public static IServiceCollection AddDialogServices(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddTransient(_ => DialogCoordinator.Instance);
+        serviceCollection.AddTransient<IDialogService, MahappsDialogService>();
+        return serviceCollection;
+    }
+
 }

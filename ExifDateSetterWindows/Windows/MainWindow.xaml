@@ -5,6 +5,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         d:DataContext="{d:DesignInstance viewmodel:MainViewModel, IsDesignTimeCreatable=True}"
+        xmlns:dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+        dialog:DialogParticipation.Register="{Binding}"
         xmlns:converters="clr-namespace:ExifDateSetterWindows.Converters"
         xmlns:viewmodel="clr-namespace:ExifDateSetterWindows.ViewModels"
         SizeToContent="Height"

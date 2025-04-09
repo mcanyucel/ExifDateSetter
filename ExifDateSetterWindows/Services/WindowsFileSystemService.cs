@@ -5,23 +5,16 @@ namespace ExifDateSetterWindows.Services;
 
 public class WindowsFileSystemService : IFileSystemService
 {
-    public async Task<IEnumerable<string>> GetFilesFromFolder(string folderPath, CancellationToken ct, string[]? extensions = null, bool isRecursive = true)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="folderPath"></param>
+    /// <param name="isRecursive"></param>
+    /// <returns></returns>
+    public Task<IEnumerable<string>> GetFilesFromFolder(string folderPath, bool isRecursive = true)
     {
-        var result = new List<string>();
-        if (!Directory.Exists(folderPath)) return result;
-        
-        string searchPattern;
-        if (extensions == null || extensions.Length == 0)
-        {
-            searchPattern = "*";
-        }
-        else 
-        {
-            searchPattern = string.Join("|", extensions.Select(ext => $"*.{ext}"));
-        }
+        if (!Directory.Exists(folderPath)) return Task.FromResult(Enumerable.Empty<string>());
         var searchOption = isRecursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-        var files = await Task.Run(() => Directory.EnumerateFiles(folderPath, searchPattern, searchOption), ct);
-        result.AddRange(files);
-        return result;
+        return Task.FromResult(Directory.EnumerateFiles(folderPath, "*", searchOption));
     }
 }

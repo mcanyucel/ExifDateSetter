@@ -1,4 +1,4 @@
-﻿namespace ExifDateSetterWindows.Model;
+﻿namespace Core.Model;
 
 public enum SupportedFileType
 {
