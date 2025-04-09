@@ -9,7 +9,7 @@ namespace ExifDateSetterWindows;
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
-public partial class App : Application
+public partial class App
 {
     private readonly IServiceProvider _serviceProvider;
     public IServiceProvider ServiceProvider => _serviceProvider;

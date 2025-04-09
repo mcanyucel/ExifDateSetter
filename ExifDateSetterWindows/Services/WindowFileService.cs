@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.IO;
-using Core.Model;
+﻿using System.IO;
 using Core.Service;
 
 namespace ExifDateSetterWindows.Services;

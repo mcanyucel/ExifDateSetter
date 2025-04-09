@@ -1,7 +1,6 @@
 ﻿using Core.Service;
 using ExifDateSetterWindows.Services;
 using ExifDateSetterWindows.ViewModels;
-using ExifDateSetterWindows.Windows;
 using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;

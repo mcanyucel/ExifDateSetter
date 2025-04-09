@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Core.Service;
 using Core.Model;
@@ -9,7 +8,7 @@ using Serilog;
 
 namespace ExifDateSetterWindows.ViewModels;
 
-public partial class MainViewModel(IFileService fileService, 
+public partial class MainViewModel(
     IProcessingService processingService, 
     IDialogService dialogService,
     ILogger logger) : ObservableObject
@@ -17,7 +16,7 @@ public partial class MainViewModel(IFileService fileService,
 
 #pragma warning disable CA1822
     // ReSharper disable MemberCanBeMadeStatic.Global
-    public IEnumerable<Actions> ActionList => Enum.GetValues<Actions>();
+    public IEnumerable<ActionType> ActionList => Enum.GetValues<ActionType>();
     public IEnumerable<FileTypeSelectionItem> FileTypeSelectionItems => FileTypeSelectionItem.GetFileTypeSelectionItems();
     public IEnumerable<ExifDateTag> ExifDateTagsList => Enum.GetValues<ExifDateTag>();
     public IEnumerable<FileDateAttribute> FileDateAttributesList => Enum.GetValues<FileDateAttribute>();
@@ -26,19 +25,23 @@ public partial class MainViewModel(IFileService fileService,
     public int MaxNumberOfThreads => Environment.ProcessorCount;
 #pragma warning restore CA1822
 
-    [ObservableProperty] private Actions _selectedAction = Actions.ExifToFileDate;
+    [ObservableProperty] private ActionType _selectedActionType = ActionType.ExifToFileDate;
     [ObservableProperty] private ExifDateTag _selectedExifDateTag = ExifDateTag.DateTimeOriginal;
     [ObservableProperty] private FileDateAttribute _selectedFileDateAttribute = FileDateAttribute.DateCreated;
     [ObservableProperty] private DateTime _defaultDateTime = DateTime.Now;
     [ObservableProperty] private int _selectedNumberOfThreads;
     [ObservableProperty] private bool _isFolderSearchRecursive = true;
-    [ObservableProperty] private bool _isIndeterminateBusy;
     [ObservableProperty] private string? _fileAndFolderCountStatus;
     [ObservableProperty] private int _progressValue;
 
+    [NotifyCanExecuteChangedFor(nameof(AnalyzeCommandWrapperCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ProcessCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CancelProcessCommand))]
+    [ObservableProperty] private bool _isBusy;
+    
     private readonly List<string> _folders = [];
     private readonly List<string> _files = [];
-    
+    private CancellationTokenSource? _processCts;
 
     private void UpdateFileAndFolderCountStatus()
     {
@@ -49,6 +52,9 @@ public partial class MainViewModel(IFileService fileService,
         else
             FileAndFolderCountStatus = null;
     }
+    
+    private bool IsBusyCanExecute() => !IsBusy;
+    private bool IsBusyCanExecuteInverse() => IsBusy;
 
     public void UpdateFilesAndFolders(IEnumerable<string> newFilesList, IEnumerable<string> newFoldersList, List<string> existingFileNameList,
         List<string> existingFolderNameList)
@@ -73,9 +79,7 @@ public partial class MainViewModel(IFileService fileService,
         var ct = cancellationToken ?? new CancellationTokenSource().Token;
         try
         {
-            IsIndeterminateBusy = true;
-            var cts = new CancellationTokenSource();
-            
+            IsBusy = true;
             var progress = new Progress<int>(value =>
             {
                 ProgressValue = value;
@@ -85,8 +89,8 @@ public partial class MainViewModel(IFileService fileService,
                 .Select<FileTypeSelectionItem, string>(item => item.SupportedFileType.GetFileExtension())
                 .ToArray();
 
-            var analysisConfig = new ProcessConfig
-                (selectedExtensions, SelectedFileDateAttribute, SelectedExifDateTag, SelectedNumberOfThreads, IsFolderSearchRecursive, cts.Token);
+            var analysisConfig = new AnalyzeConfig
+                (selectedExtensions, SelectedFileDateAttribute, SelectedExifDateTag, SelectedNumberOfThreads, IsFolderSearchRecursive, ct);
 
             var analysisResult = await processingService.AnalyzeFiles(_folders, _files, progress, analysisConfig);
             
@@ -111,35 +115,56 @@ public partial class MainViewModel(IFileService fileService,
         }
         finally
         {
-            IsIndeterminateBusy = false;
+            IsBusy = false;
         }
     }
     
     
     
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
     private async Task AnalyzeCommandWrapper() => await Analyze();
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
     private async Task Process()
     {
         try
         {
-            IsIndeterminateBusy = true;
-            var cts = new CancellationTokenSource();
-            await Analyze(false, cts.Token);
-            IsIndeterminateBusy = false;
-            ProgressValue = 0;
+            IsBusy = true;
+            _processCts = new CancellationTokenSource();
+            var progress = new Progress<int>(value => { ProgressValue = value; });
+            var selectedExtensions = FileTypeSelectionItems
+                .Where(item => item.IsSelected)
+                .Select<FileTypeSelectionItem, string>(item => item.SupportedFileType.GetFileExtension())
+                .ToArray();
+            var processConfig = new ProcessConfig(SelectedActionType, DefaultDateTime, new AnalyzeConfig(selectedExtensions,
+                SelectedFileDateAttribute,
+                SelectedExifDateTag, SelectedNumberOfThreads, IsFolderSearchRecursive, _processCts.Token));
+
+            var processResult = await processingService.ProcessFiles(_folders, _files, progress, processConfig);
+        }
+        catch(TaskCanceledException)
+        {
+            // Task was cancelled - do nothing
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Error during processing");
+            await dialogService.ShowError(this, "Error", $"An error occurred during processing: {ex.Message}");
         }
         finally
         {
-            IsIndeterminateBusy = false;
+            _processCts?.Dispose();
+            _processCts = null;
+            IsBusy = false;
+            ProgressValue = 0;
         }
     }
 
-    /// <summary>
-    /// Creates the file list from the folders and files, which contains all the files with the selected extensions
-    /// and folders lists
-    /// </summary>
-    
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecuteInverse))]
+    private void CancelProcess()
+    {
+        _processCts?.Cancel();
+    }
+
+
 }

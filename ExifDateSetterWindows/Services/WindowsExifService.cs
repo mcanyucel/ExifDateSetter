@@ -1,7 +1,4 @@
-﻿
-using System.Collections.Concurrent;
-using System.Windows.Media;
-using Core.Model;
+﻿using Core.Model;
 using Core.Service;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
@@ -19,7 +16,7 @@ public class WindowsExifService: IExifService
             return Task.FromResult(result);
         var tagId = MapExifDateTagToId(exifDateTag);
         if (!exifSubIfd.ContainsTag(tagId))
-            return Task.FromResult(result);;
+            return Task.FromResult(result);
         var dateTime = exifSubIfd.GetDateTime(tagId);
         result  = DateOnly.FromDateTime(dateTime);
         return Task.FromResult(result);

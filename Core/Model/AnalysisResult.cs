@@ -1,3 +1,3 @@
 ﻿namespace Core.Model;
 
-public record AnalysisResult(int ProcessedFileCount, FileAnalysisResult FileAnalysisResult, ExifAnalysisResult ExifAnalysisResult, List<string> fileList);
+public record AnalysisResult(int ProcessedFileCount, FileAnalysisResult FileAnalysisResult, ExifAnalysisResult ExifAnalysisResult, List<string> FileList);

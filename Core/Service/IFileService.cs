@@ -1,6 +1,4 @@
-﻿using Core.Model;
-
-namespace Core.Service;
+﻿namespace Core.Service;
 
 public interface IFileService
 {

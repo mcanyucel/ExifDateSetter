@@ -107,7 +107,7 @@
                 <ComboBox Grid.Row="0" 
                           Grid.Column="1"
                           ItemsSource="{Binding ActionList}"
-                          SelectedItem="{Binding SelectedAction}"
+                          SelectedItem="{Binding SelectedActionType}"
                           SelectedIndex="0"
                           Margin="5">
                     <ComboBox.ItemTemplate>
@@ -225,17 +225,28 @@
                            Foreground="DarkGray"
                            Text="Extract EXIF and File Attribute Data for Selected Files"></TextBlock>
                 
+                
                 <Button Grid.Row="1"
                         Grid.Column="0"
+                        Command="{Binding ProcessCommand}"
                         Margin="5"
                         Content="Start"></Button>
                 
-                <TextBlock Grid.Row="1"
-                           Grid.Column="1"
-                           VerticalAlignment="Center"
-                           Margin="5"
-                           Foreground="DarkGray"
-                           Text="Begin the processing"></TextBlock>
+                <DockPanel Grid.Row="1" Grid.Column="1" LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Command="{Binding CancelProcessCommand}"
+                            Margin="5"
+                            Foreground="Red"
+                            Content="STOP"></Button>
+                    
+                    <TextBlock DockPanel.Dock="Left"
+                               VerticalAlignment="Center"
+                               Margin="5"
+                               Foreground="DarkGray"
+                               Text="Begin the processing"></TextBlock>
+                </DockPanel>
+                
+                
             </Grid>
         </GroupBox>
         <mah:MetroProgressBar Grid.Row="4"

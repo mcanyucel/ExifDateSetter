@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Core.Model;
 using Core.Service;
-using ExifDateSetterWindows.Model;
 
 namespace ExifDateSetterWindows.Services;
 
@@ -13,7 +12,7 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
     private const int ProgressReportIntervalMs = 100; // 100ms
     private DateTime _lastReportTime = DateTime.MinValue;
     
-    public async Task<AnalysisResult> AnalyzeFiles(List<string> foldersList, List<string> filesList, IProgress<int> progress, ProcessConfig configuration)
+    public async Task<AnalysisResult> AnalyzeFiles(List<string> foldersList, List<string> filesList, IProgress<int> progress, AnalyzeConfig configuration)
     {
         configuration.CancellationToken.ThrowIfCancellationRequested();
         
@@ -67,6 +66,32 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
         return analysisResult;
     }
 
+    public async Task<ProcessResult> ProcessFiles(List<string> foldersList, List<string> filesList, IProgress<int> progress, ProcessConfig configuration)
+    {
+        configuration.AnalyzeConfig.CancellationToken.ThrowIfCancellationRequested();
+        
+        var parallelOptions = new ParallelOptions
+        {
+            CancellationToken = configuration.AnalyzeConfig.CancellationToken,
+            MaxDegreeOfParallelism = configuration.AnalyzeConfig.MaxDegreeOfParallelism
+        };
+        var fileList = await PrepareFileList(foldersList, filesList, configuration.AnalyzeConfig, parallelOptions); 
+        _processedFilesCount = 1;
+        _totalFilesCount = fileList.Count + 1; // +1 for flattening
+        await Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, ct) =>
+        {
+            await Task.Delay(1000, ct); // Simulate processing time
+            var current = Interlocked.Increment(ref _processedFilesCount);
+            if (ShouldReportProgress(current))
+            {
+                var currentPercentage = (int) Math.Round((double) current / _totalFilesCount * 100);
+                progress.Report(currentPercentage);
+            }
+        });
+        return new ProcessResult();
+    }
+
+
     private bool ShouldReportProgress(int currentCount)
     {
         lock (_processReportLockObject)
@@ -80,7 +105,7 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
     
     private async Task<List<string>> PrepareFileList(List<string> folders, 
         List<string> files,
-        ProcessConfig configuration,
+        AnalyzeConfig configuration,
         ParallelOptions parallelOptions)
     {
         /*
