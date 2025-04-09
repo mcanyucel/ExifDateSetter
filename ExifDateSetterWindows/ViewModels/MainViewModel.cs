@@ -78,16 +78,20 @@ public partial class MainViewModel(IFileService fileService,
             var cts = new CancellationTokenSource();
             await PrepareFileList(ct);
             NumberOfFiles = _files.Count;
-            var fileAnalysisResult = await fileService.AnalyzeFiles(_fileListForProcessing, SelectedFileDateAttribute, SelectedNumberOfThreads, cts.Token);
-            var exifAnalysisResult = await exifService.AnalyzeFiles(_fileListForProcessing, SelectedExifDateTag, SelectedNumberOfThreads, cts.Token);
-
-
-            var analysisResultSummary = $"Analyzed {_fileListForProcessing.Count} files\n" +
-                                        $"File Date Range: {fileAnalysisResult.MinimumFileDate} - {fileAnalysisResult.MaximumFileDate}\n" +
-                                        $"Number of files with Exif date: {exifAnalysisResult.NumberOfFilesWithExifDate}\n" +
-                                        $"Exif Date Range: {exifAnalysisResult.MinimumExifDate} - {exifAnalysisResult.MaximumExifDate}\n";
+            if (NumberOfFiles == 0)
+            {
+                await dialogService.ShowError(this, "Error", "No files found");
+                return;
+            }
+            
             if (showResult)
             {
+                var fileAnalysisResult = await fileService.AnalyzeFiles(_fileListForProcessing, SelectedFileDateAttribute, SelectedNumberOfThreads, cts.Token);
+                var exifAnalysisResult = await exifService.AnalyzeFiles(_fileListForProcessing, SelectedExifDateTag, SelectedNumberOfThreads, cts.Token);
+                var analysisResultSummary = $"Analyzed {_fileListForProcessing.Count} files\n" +
+                                            $"File Date Range: {fileAnalysisResult.MinimumFileDate} - {fileAnalysisResult.MaximumFileDate}\n" +
+                                            $"Number of files with Exif date: {exifAnalysisResult.NumberOfFilesWithExifDate}\n" +
+                                            $"Exif Date Range: {exifAnalysisResult.MinimumExifDate} - {exifAnalysisResult.MaximumExifDate}\n";
                 await dialogService.ShowInformation(this, "Analysis Result", analysisResultSummary);
             }
         }
