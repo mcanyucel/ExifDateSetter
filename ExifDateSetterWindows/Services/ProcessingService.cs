@@ -60,7 +60,7 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
         var filesWithExifDate = exifDates.Count(date => date != null);
         var exifAnalysisResult = new ExifAnalysisResult(filesWithExifDate, minimumExifDate, maximumExifDate);
         var filesAnalysisResult = new FileAnalysisResult(minimumFileDate, maximumFileDate);
-        var analysisResult = new AnalysisResult(fileList.Count, filesAnalysisResult, exifAnalysisResult);
+        var analysisResult = new AnalysisResult(fileList.Count, filesAnalysisResult, exifAnalysisResult, fileList);
         // report the last progress
         _processedFilesCount++;
         progress.Report(_processedFilesCount);
