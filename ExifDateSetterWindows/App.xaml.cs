@@ -48,7 +48,7 @@ public partial class App : Application
         serviceCollection
             .AddViewModels()
             .AddFileServices()
-            .AddExifServices()
+            .AddProcessingServices()
             .AddDialogServices()
             .AddLoggerServices();
         return serviceCollection.BuildServiceProvider();

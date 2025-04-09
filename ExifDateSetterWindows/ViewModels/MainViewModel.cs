@@ -10,8 +10,7 @@ using Serilog;
 namespace ExifDateSetterWindows.ViewModels;
 
 public partial class MainViewModel(IFileService fileService, 
-    IFileSystemService fileSystemService, 
-    IExifService exifService,
+    IProcessingService processingService, 
     IDialogService dialogService,
     ILogger logger) : ObservableObject
 {
@@ -35,11 +34,11 @@ public partial class MainViewModel(IFileService fileService,
     [ObservableProperty] private bool _isFolderSearchRecursive = true;
     [ObservableProperty] private bool _isIndeterminateBusy;
     [ObservableProperty] private string? _fileAndFolderCountStatus;
-    [ObservableProperty] private int _numberOfFiles;
+    [ObservableProperty] private int _progressValue;
 
     private readonly List<string> _folders = [];
     private readonly List<string> _files = [];
-    private List<string> _fileListForProcessing = [];
+    
 
     private void UpdateFileAndFolderCountStatus()
     {
@@ -76,22 +75,28 @@ public partial class MainViewModel(IFileService fileService,
         {
             IsIndeterminateBusy = true;
             var cts = new CancellationTokenSource();
-            await PrepareFileList(ct);
-            NumberOfFiles = _files.Count;
-            if (NumberOfFiles == 0)
+            
+            var progress = new Progress<int>(value =>
             {
-                await dialogService.ShowError(this, "Error", "No files found");
-                return;
-            }
+                ProgressValue = value;
+            });
+            var selectedExtensions = FileTypeSelectionItems
+                .Where(item => item.IsSelected)
+                .Select<FileTypeSelectionItem, string>(item => item.SupportedFileType.GetFileExtension())
+                .ToArray();
+
+            var analysisConfig = new ProcessConfig
+                (selectedExtensions, SelectedFileDateAttribute, SelectedExifDateTag, SelectedNumberOfThreads, IsFolderSearchRecursive, cts.Token);
+
+            var analysisResult = await processingService.AnalyzeFiles(_folders, _files, progress, analysisConfig);
             
             if (showResult)
             {
-                var fileAnalysisResult = await fileService.AnalyzeFiles(_fileListForProcessing, SelectedFileDateAttribute, SelectedNumberOfThreads, cts.Token);
-                var exifAnalysisResult = await exifService.AnalyzeFiles(_fileListForProcessing, SelectedExifDateTag, SelectedNumberOfThreads, cts.Token);
-                var analysisResultSummary = $"Analyzed {_fileListForProcessing.Count} files\n" +
-                                            $"File Date Range: {fileAnalysisResult.MinimumFileDate} - {fileAnalysisResult.MaximumFileDate}\n" +
-                                            $"Number of files with Exif date: {exifAnalysisResult.NumberOfFilesWithExifDate}\n" +
-                                            $"Exif Date Range: {exifAnalysisResult.MinimumExifDate} - {exifAnalysisResult.MaximumExifDate}\n";
+                
+                var analysisResultSummary = $"Analyzed {analysisResult.ProcessedFileCount} files\n" +
+                                            $"File Date Range: {analysisResult.FileAnalysisResult.MinimumFileDate} - {analysisResult.FileAnalysisResult.MaximumFileDate}\n" +
+                                            $"Number of files with Exif date: {analysisResult.ExifAnalysisResult.NumberOfFilesWithExifDate}\n" +
+                                            $"Exif Date Range: {analysisResult.ExifAnalysisResult.MinimumExifDate} - {analysisResult.ExifAnalysisResult.MaximumExifDate}\n";
                 await dialogService.ShowInformation(this, "Analysis Result", analysisResultSummary);
             }
         }
@@ -110,63 +115,31 @@ public partial class MainViewModel(IFileService fileService,
         }
     }
     
+    
+    
     [RelayCommand]
-    private async Task AnalyzeCommandWrapper()
+    private async Task AnalyzeCommandWrapper() => await Analyze();
+
+    [RelayCommand]
+    private async Task Process()
     {
-        await Analyze();
+        try
+        {
+            IsIndeterminateBusy = true;
+            var cts = new CancellationTokenSource();
+            await Analyze(false, cts.Token);
+            IsIndeterminateBusy = false;
+            ProgressValue = 0;
+        }
+        finally
+        {
+            IsIndeterminateBusy = false;
+        }
     }
 
     /// <summary>
     /// Creates the file list from the folders and files, which contains all the files with the selected extensions
     /// and folders lists
     /// </summary>
-    private async Task PrepareFileList(CancellationToken cancellationToken)
-    {
-        _fileListForProcessing = [];
-        ConcurrentDictionary<string, byte> allFiles = [];
-        /*
-         * We use dictionary to have unique file names with maximum performance:
-         * +. Thread-safe with automatic deduplication
-         * +. O(1) lookups - no performance hit inside loops
-         * +. Maintains full parallelism
-         * +. No post-processing required
-         * -. Slightly higher memory usage
-         */
-        var parallelOptions = new ParallelOptions
-        {
-            MaxDegreeOfParallelism = SelectedNumberOfThreads == 0 ? -1 : SelectedNumberOfThreads,
-            CancellationToken = cancellationToken
-        };
-        
-        var flattenFoldersTask = Task.Run(() =>
-        {
-            Parallel.ForEach(_folders, parallelOptions, folder =>
-            {
-                var files = fileSystemService.GetFilesFromFolder(folder, IsFolderSearchRecursive).Result;
-                foreach (var file in files)
-                {
-                    allFiles.TryAdd(file, 0); // Value doesn't matter
-                }
-            });
-        }, cancellationToken);
-
-        var addFilesTask = Task.Run(() =>
-        {
-            foreach (var file in _files)
-            {
-                allFiles.TryAdd(file, 0);
-            }
-        }, cancellationToken);
-        await Task.WhenAll(flattenFoldersTask, addFilesTask);
-        
-        var fileList = allFiles.Keys.ToList();
-        var extensions = FileTypeSelectionItems
-            .Where(item => item.IsSelected)
-            .Select<FileTypeSelectionItem, string>(item => item.SupportedFileType.GetFileExtension())
-            .ToArray();
-        
-        _fileListForProcessing = fileList
-            .Where(file => extensions.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-    }
+    
 }

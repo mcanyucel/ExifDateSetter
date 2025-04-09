@@ -239,7 +239,8 @@
             </Grid>
         </GroupBox>
         <mah:MetroProgressBar Grid.Row="4"
-                              Value="50"
+                              Maximum="100"
+                              Value="{Binding ProgressValue}"
                               IsIndeterminate="{Binding IsIndeterminateBusy}"
                               Margin="5"
                               Height="16"></mah:MetroProgressBar>

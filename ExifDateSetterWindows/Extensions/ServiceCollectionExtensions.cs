@@ -29,16 +29,17 @@ internal static class ServiceCollectionExtensions
         return serviceCollection;
     }
 
-    public static IServiceCollection AddExifServices(this IServiceCollection serviceCollection)
-    {
-        serviceCollection.AddTransient<IExifService, WindowsExifService>();
-        return serviceCollection;
-    }
-
     public static IServiceCollection AddDialogServices(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddTransient(_ => DialogCoordinator.Instance);
         serviceCollection.AddTransient<IDialogService, MahappsDialogService>();
+        return serviceCollection;
+    }
+
+    public static IServiceCollection AddProcessingServices(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddTransient<IExifService, WindowsExifService>();
+        serviceCollection.AddTransient<IProcessingService, ProcessingService>();
         return serviceCollection;
     }
 
