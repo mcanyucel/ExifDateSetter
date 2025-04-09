@@ -6,8 +6,6 @@ namespace ExifDateSetterWindows.Services;
 
 public class ProcessingService(IExifService exifService, IFileService fileService, IFileSystemService fileSystemService): IProcessingService
 {
-    private int _processedFilesCount;
-    private int _totalFilesCount;
     private readonly Lock _processReportLockObject = new ();
     private const int ProgressReportIntervalMs = 100; // 100ms
     private DateTime _lastReportTime = DateTime.MinValue;
@@ -22,8 +20,8 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
             MaxDegreeOfParallelism = configuration.MaxDegreeOfParallelism
         };
         var fileList = await PrepareFileList(foldersList, filesList, configuration, parallelOptions); 
-        _processedFilesCount = 1;
-        _totalFilesCount = fileList.Count + 2; // +1 for flattening, +1 for the aggregation
+        var processedFilesCount = 1;
+        var totalFilesCount = fileList.Count + 2; // +1 for flattening, +1 for the aggregation
         /*
          * Storing all the dates is inefficient in terms of memory, but 4 bytes per record is acceptable rather than
          * partitioning the file list into smaller chunks and processing them in parallel, as we should not use
@@ -44,10 +42,10 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
             var results = await Task.WhenAll(exifDateExtractTask, fileDateExtractTask);
             exifDates.Add(results[0]);
             fileDates.Add(results[1]);
-            var current = Interlocked.Increment(ref _processedFilesCount);
-            if (ShouldReportProgress(current))
+            var current = Interlocked.Increment(ref processedFilesCount);
+            if (ShouldReportProgress(current, totalFilesCount))
             {
-                var currentPercentage = (int) Math.Round((double) current / _totalFilesCount * 100);
+                var currentPercentage = (int) Math.Round((double) current / totalFilesCount * 100);
                 progress.Report(currentPercentage);
             }
         });
@@ -61,8 +59,8 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
         var filesAnalysisResult = new FileAnalysisResult(minimumFileDate, maximumFileDate);
         var analysisResult = new AnalysisResult(fileList.Count, filesAnalysisResult, exifAnalysisResult, fileList);
         // report the last progress
-        _processedFilesCount++;
-        progress.Report(_processedFilesCount);
+        processedFilesCount++;
+        progress.Report(processedFilesCount);
         return analysisResult;
     }
 
@@ -75,29 +73,134 @@ public class ProcessingService(IExifService exifService, IFileService fileServic
             CancellationToken = configuration.AnalyzeConfig.CancellationToken,
             MaxDegreeOfParallelism = configuration.AnalyzeConfig.MaxDegreeOfParallelism
         };
-        var fileList = await PrepareFileList(foldersList, filesList, configuration.AnalyzeConfig, parallelOptions); 
-        _processedFilesCount = 1;
-        _totalFilesCount = fileList.Count + 1; // +1 for flattening
-        await Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, ct) =>
+        var fileList = await PrepareFileList(foldersList, filesList, configuration.AnalyzeConfig, parallelOptions);
+        List<string> results = [];
+        switch (configuration.ActionType)
         {
-            await Task.Delay(1000, ct); // Simulate processing time
-            var current = Interlocked.Increment(ref _processedFilesCount);
-            if (ShouldReportProgress(current))
-            {
-                var currentPercentage = (int) Math.Round((double) current / _totalFilesCount * 100);
-                progress.Report(currentPercentage);
-            }
-        });
+            case ActionType.ExifToFileDate:
+                results = configuration.AnalyzeConfig.FileDateAttribute switch
+                {
+                    FileDateAttribute.DateCreated => await CopyExifDateToFileCreationDate(fileList, parallelOptions,
+                        configuration.AnalyzeConfig.ExifDateTag, configuration.DefaultDateTime, progress, configuration.AnalyzeConfig.CancellationToken),
+                    FileDateAttribute.DateModified => await CopyExifDateToFileModifiedDate(fileList, parallelOptions,
+                        configuration.AnalyzeConfig.ExifDateTag, configuration.DefaultDateTime, progress, configuration.AnalyzeConfig.CancellationToken),
+                    _ => throw new ArgumentOutOfRangeException(nameof(configuration), configuration.AnalyzeConfig.FileDateAttribute, null)
+                };
+                break;
+            case ActionType.FileDateToExif:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(configuration), configuration.ActionType, null);
+        }
+
         return new ProcessResult();
     }
 
+    private Task<List<string>> CopyExifDateToFileCreationDate(List<string> fileList, ParallelOptions parallelOptions, ExifDateTag exifDateTag, DateTime defaultDateTime, IProgress<int> progress, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        
+        ConcurrentBag<string> results = [];
+        var processedFileCount = 0;
+        var totalFilesCount = fileList.Count;
+        
+        Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, ct) =>
+        {
+            var exifDate = await exifService.ExtractExifDateTag(filePath, exifDateTag);
+            var trueDate = exifDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) ?? defaultDateTime;
+            var result = await fileService.SetFileDateCreated(filePath, trueDate);
+            results.Add($"File Path: {filePath}, Date: {trueDate}, Result: {result}");
+            var current = Interlocked.Increment(ref processedFileCount);
+            if (ShouldReportProgress(current, totalFilesCount))
+            {
+                var currentPercentage = (int) Math.Round((double) current / totalFilesCount * 100);
+                progress.Report(currentPercentage);
+            }
+        });
+        return Task.FromResult(results.ToList());
+    }
+    
+    private Task<List<string>> CopyExifDateToFileModifiedDate(List<string> fileList, ParallelOptions parallelOptions, ExifDateTag exifDateTag, DateTime defaultDateTime, IProgress<int> progress, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        
+        ConcurrentBag<string> results = [];
+        var processedFileCount = 0;
+        var totalFilesCount = fileList.Count;
+        
+        Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, _) =>
+        {
+            var exifDate = await exifService.ExtractExifDateTag(filePath, exifDateTag);
+            var trueDate = exifDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) ?? defaultDateTime;
+            var result = await fileService.SetFileDateModified(filePath, trueDate);
+            results.Add($"File Path: {filePath}, Date: {trueDate}, Result: {result}");
+            var current = Interlocked.Increment(ref processedFileCount);
+            if (ShouldReportProgress(current, totalFilesCount))
+            {
+                var currentPercentage = (int) Math.Round((double) current / totalFilesCount * 100);
+                progress.Report(currentPercentage);
+            }
+        });
+        return Task.FromResult(results.ToList());
+    }
 
-    private bool ShouldReportProgress(int currentCount)
+    private Task<List<string>> CopyFileCreationDateToExifDate(List<string> fileList, ParallelOptions parallelOptions, DateTime defaultDateTime,
+        IProgress<int> progress, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        
+        ConcurrentBag<string> results = [];
+        var processedFileCount = 0;
+        var totalFilesCount = fileList.Count;
+        
+        Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, _) =>
+        {
+            var fileDate = await fileService.ExtractFileDateCreated(filePath);
+            var trueDate = fileDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) ?? defaultDateTime;
+            var result = await exifService.SetExifDateTag(filePath, trueDate, ExifDateTag.DateTimeOriginal);
+            results.Add($"File Path: {filePath}, Date: {trueDate}, Result: {result}");
+            var current = Interlocked.Increment(ref processedFileCount);
+            if (ShouldReportProgress(current, totalFilesCount))
+            {
+                var currentPercentage = (int) Math.Round((double) current / totalFilesCount * 100);
+                progress.Report(currentPercentage);
+            }
+        });
+        return Task.FromResult(results.ToList());
+    }
+    
+    private Task<List<string>> CopyFileModifiedDateToExifDate(List<string> fileList, ParallelOptions parallelOptions, DateTime defaultDateTime,
+        IProgress<int> progress, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        
+        ConcurrentBag<string> results = [];
+        var processedFileCount = 0;
+        var totalFilesCount = fileList.Count;
+        
+        Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, _) =>
+        {
+            var fileDate = await fileService.ExtractFileDateModified(filePath);
+            var trueDate = fileDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) ?? defaultDateTime;
+            var result = await exifService.SetExifDateTag(filePath, trueDate, ExifDateTag.DateTimeOriginal);
+            results.Add($"File Path: {filePath}, Date: {trueDate}, Result: {result}");
+            var current = Interlocked.Increment(ref processedFileCount);
+            if (ShouldReportProgress(current, totalFilesCount))
+            {
+                var currentPercentage = (int) Math.Round((double) current / totalFilesCount * 100);
+                progress.Report(currentPercentage);
+            }
+        });
+        return Task.FromResult(results.ToList());
+    }
+
+
+    private bool ShouldReportProgress(int currentCount, int totalFilesCount)
     {
         lock (_processReportLockObject)
         {
             var now = DateTime.Now;
-            if (!((now - _lastReportTime).TotalMilliseconds >= ProgressReportIntervalMs) && currentCount != _totalFilesCount) return false;
+            if (!((now - _lastReportTime).TotalMilliseconds >= ProgressReportIntervalMs) && currentCount != totalFilesCount) return false;
             _lastReportTime = now;
             return true;
         }

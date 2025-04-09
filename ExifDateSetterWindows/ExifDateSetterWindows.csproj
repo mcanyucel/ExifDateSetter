@@ -11,6 +11,7 @@
 
     <ItemGroup>
       <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+      <PackageReference Include="ExifLibNet.Updated" Version="2.1.5" />
       <PackageReference Include="MahApps.Metro" Version="3.0.0-rc0516" />
       <PackageReference Include="MahApps.Metro.IconPacks" Version="5.1.0" />
       <PackageReference Include="MetadataExtractor" Version="2.9.0-rc2" />

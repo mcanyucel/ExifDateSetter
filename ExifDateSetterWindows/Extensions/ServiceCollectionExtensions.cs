@@ -1,4 +1,6 @@
-﻿using Core.Service;
+﻿using Core.Factory;
+using Core.Service;
+using ExifDateSetterWindows.Factory;
 using ExifDateSetterWindows.Services;
 using ExifDateSetterWindows.ViewModels;
 using MahApps.Metro.Controls.Dialogs;
@@ -37,8 +39,14 @@ internal static class ServiceCollectionExtensions
 
     public static IServiceCollection AddProcessingServices(this IServiceCollection serviceCollection)
     {
-        serviceCollection.AddTransient<IExifService, WindowsExifService>();
-        serviceCollection.AddTransient<IProcessingService, ProcessingService>();
+        serviceCollection.AddSingleton<IExifService, WindowsExifService>();
+        serviceCollection.AddSingleton<IProcessingService, ProcessingService>();
+        return serviceCollection;
+    }
+    
+    public static IServiceCollection AddFactories(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddSingleton<IDateCopyStrategyFactory, DateCopyStrategyFactory>();
         return serviceCollection;
     }
 

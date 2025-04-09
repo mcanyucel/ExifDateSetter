@@ -50,6 +50,7 @@ public partial class App
             .AddFileServices()
             .AddProcessingServices()
             .AddDialogServices()
+            .AddFactories()
             .AddLoggerServices();
         return serviceCollection.BuildServiceProvider();
     }

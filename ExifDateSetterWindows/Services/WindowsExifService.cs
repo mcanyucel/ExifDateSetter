@@ -1,12 +1,23 @@
 ﻿using Core.Model;
 using Core.Service;
+using ExifLibrary;
 using MetadataExtractor;
 using MetadataExtractor.Formats.Exif;
+using Serilog;
 
 namespace ExifDateSetterWindows.Services;
 
-public class WindowsExifService: IExifService
+public class WindowsExifService(ILogger logger): IExifService
 {
+    private readonly Dictionary<ExifDateTag, int> _metadataExtractorTagMap = new()
+    {
+        { ExifDateTag.DateTimeOriginal, ExifDirectoryBase.TagDateTimeOriginal }
+    };
+    private readonly Dictionary<ExifDateTag, ExifTag> _exifLibraryTagMap = new()
+    {
+        { ExifDateTag.DateTimeOriginal, ExifTag.DateTimeOriginal }
+    };
+    
     public Task <DateOnly?> ExtractExifDateTag(string imagePath, ExifDateTag exifDateTag)
     {
         DateOnly? result = null;
@@ -14,7 +25,7 @@ public class WindowsExifService: IExifService
         var exifSubIfd = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
         if (exifSubIfd == null)
             return Task.FromResult(result);
-        var tagId = MapExifDateTagToId(exifDateTag);
+        var tagId = _metadataExtractorTagMap[exifDateTag];
         if (!exifSubIfd.ContainsTag(tagId))
             return Task.FromResult(result);
         var dateTime = exifSubIfd.GetDateTime(tagId);
@@ -22,12 +33,20 @@ public class WindowsExifService: IExifService
         return Task.FromResult(result);
     }
 
-    private static int MapExifDateTagToId(ExifDateTag exifDateTag)
+    public Task<bool> SetExifDateTag(string imagePath, DateTime date, ExifDateTag exifDateTag)
     {
-        return exifDateTag switch
+        try
         {
-            ExifDateTag.DateTimeOriginal => ExifDirectoryBase.TagDateTimeOriginal,
-            _ => throw new ArgumentOutOfRangeException(nameof(exifDateTag), exifDateTag, null)
-        };
+            var file = ImageFile.FromFile(imagePath);
+            var exifTag = _exifLibraryTagMap[exifDateTag];
+            file.Properties.Set(exifTag, date);
+            file.Save(imagePath);
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Failed to set exif date");
+            return Task.FromResult(false);
+        }
     }
 }
