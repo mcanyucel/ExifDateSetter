@@ -45,12 +45,12 @@ A Windows desktop application for easily synchronizing dates between EXIF metada
 
 ### Installation Options
 1. **Download the latest release**:
-    - Get the latest version from the [Releases](https://github.com/yourusername/ExifDateSetter/releases) page
+    - Get the latest version from the [Releases](https://github.com/mcanyucel/ExifDateSetter/releases) page
     - Run the installer or extract the portable version
 
 2. **Build from source**:
    ```
-   git clone https://github.com/yourusername/ExifDateSetter.git
+   git clone https://github.com/mcanyucel/ExifDateSetter.git
    cd ExifDateSetter
    dotnet build --configuration Release
    ```

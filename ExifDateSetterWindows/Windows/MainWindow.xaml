@@ -42,18 +42,9 @@
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
                     <ColumnDefinition Width="*"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Row="0" 
-                        Grid.Column="0"
-                        Margin="5"
-                        Content="ADD FILES"
-                        Style="{DynamicResource MahApps.Styles.Button}"></Button>
-                <Button Grid.Row="0" 
-                        Grid.Column="1"
-                        Margin="5"
-                        Content="ADD FOLDER"
-                        Style="{DynamicResource MahApps.Styles.Button}"></Button>
                 <CheckBox Grid.Row="0"
-                          Grid.Column="2"
+                          Grid.Column="0"
+                          Grid.ColumnSpan="3"
                           Margin="5"
                           IsChecked="{Binding IsFolderSearchRecursive}"
                           Content="Include Subdirectories"></CheckBox>
@@ -73,7 +64,7 @@
                            DragEnter="FileDragDrop_OnDragEnter"
                            DragLeave="FileDragDrop_OnDragLeave"
                            Drop="FileDragDrop_OnDrop"
-                           Text="Add files by buttons above or drag and drop them here."
+                           Text="Drag &amp; Drop Files and Folders Here to Add or Remove"
                            FontSize="16"
                            Foreground="DarkGray"
                            FontStyle="Italic"
