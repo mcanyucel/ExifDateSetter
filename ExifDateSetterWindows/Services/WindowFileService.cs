@@ -6,15 +6,27 @@ namespace ExifDateSetterWindows.Services;
 
 public class WindowFileService(ILogger logger) : IFileService
 {
-    public Task<DateOnly?> ExtractFileDateCreated(string filePath)
+    public Task<DateOnly?> ExtractFileDateOnlyCreated(string filePath)
     {
         DateOnly? result = DateOnly.FromDateTime(File.GetCreationTime(filePath));
         return Task.FromResult(result);
     }
     
-    public Task<DateOnly?> ExtractFileDateModified(string filePath)
+    public Task<DateOnly?> ExtractFileDateOnlyModified(string filePath)
     {
         DateOnly? result = DateOnly.FromDateTime(File.GetLastWriteTime(filePath));
+        return Task.FromResult(result);
+    }
+
+    public Task<DateTime?> ExtractFileDateTimeCreated(string filePath)
+    {
+        DateTime? result = File.GetCreationTime(filePath);
+        return Task.FromResult(result);
+    }
+
+    public Task<DateTime?> ExtractFileDateTimeModified(string filePath)
+    {
+        DateTime? result = File.GetLastWriteTime(filePath);
         return Task.FromResult(result);
     }
 

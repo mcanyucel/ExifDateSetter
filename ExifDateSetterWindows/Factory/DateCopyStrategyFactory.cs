@@ -31,9 +31,7 @@ public class DateCopyStrategyFactory : IDateCopyStrategyFactory
             foreach (var fileDateAttribute in fileDateAttributes)
             {
                 var strategyHash = HashCode.Combine(actionType, fileDateAttribute);
-                var exifService = App.Current.ServiceProvider.GetRequiredService<IExifService>();
-                var fileService = App.Current.ServiceProvider.GetRequiredService<IFileService>();
-                IDateCopyStrategy strategy = actionType switch
+                var strategy = actionType switch
                 {
                     ActionType.ExifToFileDate => fileDateAttribute switch
                     {
@@ -43,8 +41,8 @@ public class DateCopyStrategyFactory : IDateCopyStrategyFactory
                     },
                     ActionType.FileDateToExif => fileDateAttribute switch
                     {
-                        FileDateAttribute.DateCreated => App.Current.ServiceProvider.GetRequiredKeyedService<IDateCopyStrategy>(nameof(ExifToFileCreationStrategy)),
-                        FileDateAttribute.DateModified => App.Current.ServiceProvider.GetRequiredKeyedService<IDateCopyStrategy>(nameof(ExifToFileLastModifiedStrategy)),
+                        FileDateAttribute.DateCreated => App.Current.ServiceProvider.GetRequiredKeyedService<IDateCopyStrategy>(nameof(FileCreationToExifDateStrategy)),
+                        FileDateAttribute.DateModified => App.Current.ServiceProvider.GetRequiredKeyedService<IDateCopyStrategy>(nameof(FileLastModifiedToExifDateStrategy)),
                         _ => throw new ArgumentOutOfRangeException(nameof(fileDateAttribute), fileDateAttribute, null)
                     },
                     _ => throw new ArgumentOutOfRangeException(nameof(actionType), actionType, null)

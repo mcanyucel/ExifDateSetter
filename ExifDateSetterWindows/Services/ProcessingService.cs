@@ -35,11 +35,11 @@ public class ProcessingService(
 
         await Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, _) =>
         {
-            var exifDateExtractTask = exifService.ExtractExifDateTag(filePath, configuration.ExifDateTag);
+            var exifDateExtractTask = exifService.ExtractExifDateOnlyTag(filePath, configuration.ExifDateTag);
             var fileDateExtractTask = configuration.FileDateAttribute switch
             {
-                FileDateAttribute.DateCreated => fileService.ExtractFileDateCreated(filePath),
-                FileDateAttribute.DateModified => fileService.ExtractFileDateModified(filePath),
+                FileDateAttribute.DateCreated => fileService.ExtractFileDateOnlyCreated(filePath),
+                FileDateAttribute.DateModified => fileService.ExtractFileDateOnlyModified(filePath),
                 _ => throw new ArgumentOutOfRangeException(nameof(configuration), configuration.FileDateAttribute, null)
             };
             var results = await Task.WhenAll(exifDateExtractTask, fileDateExtractTask);
@@ -60,7 +60,7 @@ public class ProcessingService(
         var filesWithExifDate = exifDates.Count(date => date != null);
         var exifAnalysisResult = new ExifAnalysisResult(filesWithExifDate, minimumExifDate, maximumExifDate);
         var filesAnalysisResult = new FileAnalysisResult(minimumFileDate, maximumFileDate);
-        var analysisResult = new AnalysisResult(fileList.Count, filesAnalysisResult, exifAnalysisResult, fileList);
+        var analysisResult = new AnalysisResult(fileList.Count, filesAnalysisResult, exifAnalysisResult);
         // report the last progress
         processedFilesCount++;
         progress.Report(processedFilesCount);
@@ -70,18 +70,18 @@ public class ProcessingService(
     public async Task<ProcessResult> ProcessFiles(List<string> foldersList, List<string> filesList, IProgress<int> progress, ProcessConfig configuration)
     {
         configuration.AnalyzeConfig.CancellationToken.ThrowIfCancellationRequested();
-        
         var parallelOptions = new ParallelOptions
         {
             CancellationToken = configuration.AnalyzeConfig.CancellationToken,
             MaxDegreeOfParallelism = configuration.AnalyzeConfig.MaxDegreeOfParallelism
         };
         var fileList = await PrepareFileList(foldersList, filesList, configuration.AnalyzeConfig, parallelOptions);
-        List<string> results = [];
         var dateCopyStrategy = dateCopyStrategyFactory.GetCopyStrategy(configuration);
-        results = await dateCopyStrategy.CopyDate(fileList, parallelOptions, configuration.DefaultDateTime, progress, configuration.AnalyzeConfig.ExifDateTag, configuration.AnalyzeConfig.CancellationToken);
-        
-        return new ProcessResult();
+        var results = await dateCopyStrategy.CopyDate(fileList, parallelOptions, configuration.DefaultDateTime, progress, 
+            configuration.AnalyzeConfig.ExifDateTag, configuration.AnalyzeConfig.CancellationToken);
+        var successCount = results.Count(r => r.IsSet);
+        var failureCount = results.Count(r => !r.IsSet);
+        return new ProcessResult(successCount, failureCount);
     }
     
     private async Task<List<string>> PrepareFileList(List<string> folders, 

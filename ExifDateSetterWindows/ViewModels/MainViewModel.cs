@@ -74,6 +74,11 @@ public partial class MainViewModel(
 
     private async Task Analyze(bool showResult = true, CancellationToken? cancellationToken = null)
     {
+        if (_files.Count == 0 && _folders.Count == 0)
+        {
+            await dialogService.ShowError(this, "Error", "No files or folders selected for analysis.");
+            return;
+        }
         if (cancellationToken?.IsCancellationRequested == true) return;
         // if no cancellation token is provided, create a new one
         var ct = cancellationToken ?? new CancellationTokenSource().Token;
@@ -96,12 +101,7 @@ public partial class MainViewModel(
             
             if (showResult)
             {
-                
-                var analysisResultSummary = $"Analyzed {analysisResult.ProcessedFileCount} files\n" +
-                                            $"File Date Range: {analysisResult.FileAnalysisResult.MinimumFileDate} - {analysisResult.FileAnalysisResult.MaximumFileDate}\n" +
-                                            $"Number of files with Exif date: {analysisResult.ExifAnalysisResult.NumberOfFilesWithExifDate}\n" +
-                                            $"Exif Date Range: {analysisResult.ExifAnalysisResult.MinimumExifDate} - {analysisResult.ExifAnalysisResult.MaximumExifDate}\n";
-                await dialogService.ShowInformation(this, "Analysis Result", analysisResultSummary);
+                await dialogService.ShowInformation(this, "Analysis Result", analysisResult.Summarize());
             }
         }
         catch (OperationCanceledException)
@@ -119,14 +119,17 @@ public partial class MainViewModel(
         }
     }
     
-    
-    
     [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
     private async Task AnalyzeCommandWrapper() => await Analyze();
 
     [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
     private async Task Process()
     {
+        if (_files.Count == 0 && _folders.Count == 0)
+        {
+            await dialogService.ShowError(this, "Error", "No files or folders selected for processing.");
+            return;
+        }
         try
         {
             IsBusy = true;
@@ -141,6 +144,8 @@ public partial class MainViewModel(
                 SelectedExifDateTag, SelectedNumberOfThreads, IsFolderSearchRecursive, _processCts.Token));
 
             var processResult = await processingService.ProcessFiles(_folders, _files, progress, processConfig);
+            await dialogService.ShowInformation(this, "Processing Result", processResult.Summarize());
+                                            
         }
         catch(TaskCanceledException)
         {

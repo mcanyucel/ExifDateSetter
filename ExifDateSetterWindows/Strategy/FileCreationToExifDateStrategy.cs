@@ -7,21 +7,23 @@ namespace ExifDateSetterWindows.Strategy;
 
 public class FileCreationToExifDateStrategy(IExifService exifService, IFileService fileService, IProgressService progressService) : IDateCopyStrategy
 {
-    public Task<List<string>> CopyDate(List<string> fileList, ParallelOptions parallelOptions, DateTime defaultDateTime, IProgress<int> progress, ExifDateTag exifDateTag,
+    public async Task<List<ProcessItemResult>> CopyDate(List<string> fileList, ParallelOptions parallelOptions, DateTime defaultDateTime, 
+        IProgress<int> progress, ExifDateTag exifDateTag,
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         
-        ConcurrentBag<string> results = [];
+        ConcurrentBag<ProcessItemResult> results = [];
         var processedFileCount = 0;
         var totalFilesCount = fileList.Count;
         
-        Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, _) =>
+        await Parallel.ForEachAsync(fileList, parallelOptions, async (filePath, cancellationToken) =>
         {
-            var fileDate = await fileService.ExtractFileDateCreated(filePath);
-            var trueDate = fileDate?.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc) ?? defaultDateTime;
-            var result = await exifService.SetExifDateTag(filePath, trueDate, ExifDateTag.DateTimeOriginal);
-            results.Add($"File Path: {filePath}, Date: {trueDate}, Result: {result}");
+            cancellationToken.ThrowIfCancellationRequested();
+            var fileDate = await fileService.ExtractFileDateTimeCreated(filePath);
+            var trueDate = fileDate ?? defaultDateTime;
+            var isSet = await exifService.SetExifDateTag(filePath, trueDate, ExifDateTag.DateTimeOriginal);
+            results.Add(new ProcessItemResult(filePath, trueDate, isSet));
             var current = Interlocked.Increment(ref processedFileCount);
             if (progressService.ShouldReportProgress(current, totalFilesCount))
             {
@@ -29,6 +31,6 @@ public class FileCreationToExifDateStrategy(IExifService exifService, IFileServi
                 progress.Report(currentPercentage);
             }
         });
-        return Task.FromResult(results.ToList());
+        return results.ToList();
     }
 }

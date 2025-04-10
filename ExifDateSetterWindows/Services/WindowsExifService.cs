@@ -18,7 +18,7 @@ public class WindowsExifService(ILogger logger): IExifService
         { ExifDateTag.DateTimeOriginal, ExifTag.DateTimeOriginal }
     };
     
-    public Task <DateOnly?> ExtractExifDateTag(string imagePath, ExifDateTag exifDateTag)
+    public Task <DateOnly?> ExtractExifDateOnlyTag(string imagePath, ExifDateTag exifDateTag)
     {
         DateOnly? result = null;
         IEnumerable<Directory> directories = ImageMetadataReader.ReadMetadata(imagePath);
@@ -30,6 +30,20 @@ public class WindowsExifService(ILogger logger): IExifService
             return Task.FromResult(result);
         var dateTime = exifSubIfd.GetDateTime(tagId);
         result  = DateOnly.FromDateTime(dateTime);
+        return Task.FromResult(result);
+    }
+
+    public Task<DateTime?> ExtractExifDateTimeTag(string imagePath, ExifDateTag exifDateTag)
+    {
+        DateTime? result = null;
+        IEnumerable<Directory> directories = ImageMetadataReader.ReadMetadata(imagePath);
+        var exifSubIfd = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
+        if (exifSubIfd == null)
+            return Task.FromResult(result);
+        var tagId = _metadataExtractorTagMap[exifDateTag];
+        if (!exifSubIfd.ContainsTag(tagId))
+            return Task.FromResult(result);
+        result = exifSubIfd.GetDateTime(tagId);
         return Task.FromResult(result);
     }
 
