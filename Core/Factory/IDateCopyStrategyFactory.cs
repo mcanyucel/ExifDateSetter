@@ -5,6 +5,5 @@ namespace Core.Factory;
 
 public interface IDateCopyStrategyFactory
 {
-    IDateCopyStrategy GetCopyStrategy(List<string> fileList, ProcessConfig configuration,
-        IProgress<int> progress, CancellationToken ct);
+    IDateCopyStrategy GetCopyStrategy(ProcessConfig configuration);
 }

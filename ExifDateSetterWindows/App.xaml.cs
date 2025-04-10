@@ -11,13 +11,13 @@ namespace ExifDateSetterWindows;
 /// </summary>
 public partial class App
 {
-    private readonly IServiceProvider _serviceProvider;
-    public IServiceProvider ServiceProvider => _serviceProvider;
+    public IServiceProvider ServiceProvider { get; }
+
     public new static App Current => (App)Application.Current;
     public App()
     {
         ConfigureLogger();
-        _serviceProvider = ConfigureServices();
+        ServiceProvider = ConfigureServices();
     }
 
     private static void ConfigureLogger()
@@ -51,6 +51,7 @@ public partial class App
             .AddProcessingServices()
             .AddDialogServices()
             .AddFactories()
+            .AddDateCopyStrategies()
             .AddLoggerServices();
         return serviceCollection.BuildServiceProvider();
     }

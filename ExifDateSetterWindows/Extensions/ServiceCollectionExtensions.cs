@@ -1,7 +1,9 @@
 ﻿using Core.Factory;
 using Core.Service;
+using Core.Strategy;
 using ExifDateSetterWindows.Factory;
 using ExifDateSetterWindows.Services;
+using ExifDateSetterWindows.Strategy;
 using ExifDateSetterWindows.ViewModels;
 using MahApps.Metro.Controls.Dialogs;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,6 +43,16 @@ internal static class ServiceCollectionExtensions
     {
         serviceCollection.AddSingleton<IExifService, WindowsExifService>();
         serviceCollection.AddSingleton<IProcessingService, ProcessingService>();
+        serviceCollection.AddTransient<IProgressService, ProgressService>();
+        return serviceCollection;
+    }
+
+    public static IServiceCollection AddDateCopyStrategies(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddKeyedSingleton<IDateCopyStrategy, ExifToFileCreationStrategy>(nameof(ExifToFileCreationStrategy));
+        serviceCollection.AddKeyedSingleton<IDateCopyStrategy, ExifToFileLastModifiedStrategy>(nameof(ExifToFileLastModifiedStrategy));
+        serviceCollection.AddKeyedSingleton<IDateCopyStrategy, FileCreationToExifDateStrategy>(nameof(FileCreationToExifDateStrategy));
+        serviceCollection.AddKeyedSingleton<IDateCopyStrategy, FileLastModifiedToExifDateStrategy>(nameof(FileLastModifiedToExifDateStrategy));
         return serviceCollection;
     }
     
