@@ -5,7 +5,13 @@ A Windows desktop application for easily synchronizing dates between EXIF metada
 ## Screenshots
 
 ![ExifDateSetter Screenshot](screenshots/sc01.png)
+
+Dropping new files (cursor is not visible in the screenshot) to the application will add them to the list.
+
 ![ExifDateSetter Screenshot](screenshots/sc02.png)
+
+You can also drag and drop files from the list back to the desktop or any other folder to remove them from the list.
+
 ![ExifDateSetter Screenshot](screenshots/sc03.png)
 ![ExifDateSetter Screenshot](screenshots/sc04.png)
 ![ExifDateSetter Screenshot](screenshots/sc05.png)
