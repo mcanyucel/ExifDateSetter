@@ -3,3 +3,6 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+upload-update.bat
+WindowsInstaller/publish/
+WindowsInstaller/Output/

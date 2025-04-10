@@ -1,5 +1,5 @@
 #define MyAppName "Exif Date Setter"
-#define MyAppVersion "1.0.0.1"
+#define MyAppVersion "1.1.0.0"
 #define MyAppPublisher "MCY"
 #define MyAppExeName "ExifDateSetterWindows.exe"
 

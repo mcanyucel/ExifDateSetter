@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Core.Service;
 using Core.Model;
+using ExifDateSetterWindows.AutoUpdate;
 using ExifDateSetterWindows.Extensions;
 using ExifDateSetterWindows.Model;
 using Serilog;
@@ -11,6 +12,7 @@ namespace ExifDateSetterWindows.ViewModels;
 public partial class MainViewModel(
     IProcessingService processingService, 
     IDialogService dialogService,
+    UpdateEngine updateEngine,
     ILogger logger) : ObservableObject
 {
 
@@ -19,6 +21,8 @@ public partial class MainViewModel(
     public IEnumerable<ActionType> ActionList => Enum.GetValues<ActionType>();
     public IEnumerable<FileTypeSelectionItem> FileTypeSelectionItems => FileTypeSelectionItem.GetFileTypeSelectionItems();
     public IEnumerable<ExifDateTag> ExifDateTagsList => Enum.GetValues<ExifDateTag>();
+    
+    public string WindowTitle => $"Exif Date Setter {App.AppVersion}";
     public IEnumerable<FileDateAttribute> FileDateAttributesList => Enum.GetValues<FileDateAttribute>();
 
     // ReSharper enable MemberCanBeMadeStatic.Global
@@ -171,5 +175,32 @@ public partial class MainViewModel(
         _processCts?.Cancel();
     }
 
-
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
+    private async Task CheckForUpdates()
+    {
+        IsBusy = true;
+        var hasUpdate = await updateEngine.CheckForUpdates();
+        if (hasUpdate)
+        {
+            var shouldStartUpdate = await dialogService.ShowQuestion(this, "Update Available", "An update is available. Do you want to download it?");
+            
+            if (shouldStartUpdate)
+            {
+                try
+                {
+                    await updateEngine.DownloadAndInstallUpdate();
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to download and install update");
+                    await dialogService.ShowError(this, "Error", "Failed to download and install update.");
+                }
+            }
+        }
+        else
+        {
+            await dialogService.ShowInformation(this, "No Update Available", "You are already using the latest version.");
+        }
+        IsBusy = false;
+    }
 }
