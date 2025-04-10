@@ -1,6 +1,7 @@
 ﻿using Core.Factory;
 using Core.Service;
 using Core.Strategy;
+using ExifDateSetterWindows.AutoUpdate;
 using ExifDateSetterWindows.Factory;
 using ExifDateSetterWindows.Services;
 using ExifDateSetterWindows.Strategy;
@@ -62,4 +63,9 @@ internal static class ServiceCollectionExtensions
         return serviceCollection;
     }
 
+    public static IServiceCollection AddUpdateServices(this IServiceCollection services)
+    {
+        services.AddSingleton<UpdateEngine>();
+        return services;
+    }
 }

@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Windows;
 using ExifDateSetterWindows.Extensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +14,18 @@ namespace ExifDateSetterWindows;
 public partial class App
 {
     public IServiceProvider ServiceProvider { get; }
+    public const string UpdateHttpClientName = "UpdateHttpClient";
+
+    public static string AppVersion
+    {
+        get
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var fileVersionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
+            return Version.Parse(fileVersionInfo.FileVersion ?? "0.0.0.0").ToString();
+        }
+    }
+
 
     public new static App Current => (App)Application.Current;
     public App()
@@ -52,6 +66,7 @@ public partial class App
             .AddDialogServices()
             .AddFactories()
             .AddDateCopyStrategies()
+            .AddUpdateServices()
             .AddLoggerServices();
         return serviceCollection.BuildServiceProvider();
     }

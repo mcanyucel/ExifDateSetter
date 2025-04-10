@@ -19,6 +19,8 @@ public partial class MainViewModel(
     public IEnumerable<ActionType> ActionList => Enum.GetValues<ActionType>();
     public IEnumerable<FileTypeSelectionItem> FileTypeSelectionItems => FileTypeSelectionItem.GetFileTypeSelectionItems();
     public IEnumerable<ExifDateTag> ExifDateTagsList => Enum.GetValues<ExifDateTag>();
+    
+    public string WindowTitle => $"Exif Date Setter {App.AppVersion}";
     public IEnumerable<FileDateAttribute> FileDateAttributesList => Enum.GetValues<FileDateAttribute>();
 
     // ReSharper enable MemberCanBeMadeStatic.Global
