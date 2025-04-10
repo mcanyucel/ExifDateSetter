@@ -4,10 +4,17 @@
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ExifDateSetterWindows"
+        d:DataContext="{d:DesignInstance viewmodel:MainViewModel, IsDesignTimeCreatable=True}"
+        xmlns:dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+        dialog:DialogParticipation.Register="{Binding}"
+        xmlns:converters="clr-namespace:ExifDateSetterWindows.Converters"
+        xmlns:viewmodel="clr-namespace:ExifDateSetterWindows.ViewModels"
         SizeToContent="Height"
         mc:Ignorable="d"
         Title="EXIF DATE SETTER" Width="640">
+    <mah:MetroWindow.Resources>
+        <converters:ActionsDisplayConverter x:Key="ActionsDisplayConverter"></converters:ActionsDisplayConverter>
+    </mah:MetroWindow.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -20,6 +27,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
+        
         
         <GroupBox Grid.Row="0"
                   Margin="2"
@@ -47,9 +55,11 @@
                 <CheckBox Grid.Row="0"
                           Grid.Column="2"
                           Margin="5"
+                          IsChecked="{Binding IsFolderSearchRecursive}"
                           Content="Include Subdirectories"></CheckBox>
                 <Rectangle Grid.Row="1"
                            Grid.Column="0"
+                           Name="RectangleDragDrop"
                            Margin="5"
                            Grid.ColumnSpan="3"
                            StrokeThickness="1"
@@ -57,7 +67,12 @@
                            StrokeDashArray="6"></Rectangle>
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
-                           Grid.ColumnSpan="3" 
+                           Grid.ColumnSpan="3"
+                           Name="TextBlockDragDrop"
+                           AllowDrop="True"
+                           DragEnter="FileDragDrop_OnDragEnter"
+                           DragLeave="FileDragDrop_OnDragLeave"
+                           Drop="FileDragDrop_OnDrop"
                            Text="Add files by buttons above or drag and drop them here."
                            FontSize="16"
                            Foreground="DarkGray"
@@ -91,12 +106,15 @@
                            Text="Action"></TextBlock>
                 <ComboBox Grid.Row="0" 
                           Grid.Column="1"
+                          ItemsSource="{Binding ActionList}"
+                          SelectedItem="{Binding SelectedActionType}"
                           SelectedIndex="0"
                           Margin="5">
-                    <ComboBox.Items>
-                        <ComboBoxItem>EXIF Tag &gt; File Attribute</ComboBoxItem>
-                        <ComboBoxItem>EXIF Tag &gt; File Attribute</ComboBoxItem>    
-                    </ComboBox.Items>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource ActionsDisplayConverter}}"></TextBlock>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
                 </ComboBox>
                 
                 <TextBlock Grid.Row="0"
@@ -104,14 +122,21 @@
                            Margin="5"
                            VerticalAlignment="Center"
                            Text="File Types to Include"></TextBlock>
-                <mah:MultiSelectionComboBox Grid.Row="0" 
+                <ComboBox Grid.Row="0"
                           Grid.Column="3"
                           IsEditable="False"
                           IsTextSearchEnabled="True"
-                          SelectedIndex="0"
-                          
+                          ItemsSource="{Binding FileTypeSelectionItems}"
                           Margin="5">
-                </mah:MultiSelectionComboBox>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox IsChecked="{Binding IsSelected}"></CheckBox>
+                                <TextBlock Text="{Binding SupportedFileType}"></TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
@@ -121,10 +146,9 @@
                 <ComboBox Grid.Row="1" 
                           Grid.Column="1"
                           SelectedIndex="0"
+                          ItemsSource="{Binding ExifDateTagsList}"
+                          SelectedItem="{Binding SelectedExifDateTag}"
                           Margin="5">
-                    <ComboBox.Items>
-                        <ComboBoxItem>DateTaken</ComboBoxItem>
-                    </ComboBox.Items>
                 </ComboBox>
                 
                 <TextBlock Grid.Row="1"
@@ -135,10 +159,9 @@
                 <ComboBox Grid.Row="1" 
                           Grid.Column="3"
                           SelectedIndex="0"
+                          ItemsSource="{Binding FileDateAttributesList}"
+                          SelectedItem="{Binding SelectedFileDateAttribute}"
                           Margin="5">
-                    <ComboBox.Items>
-                        <ComboBoxItem>DateCreated</ComboBoxItem>
-                    </ComboBox.Items>
                 </ComboBox>
                 
                 <TextBlock Grid.Row="2"
@@ -151,6 +174,7 @@
                 <DatePicker Grid.Row="2" 
                             Grid.Column="2" 
                             Grid.ColumnSpan="2" 
+                            SelectedDate="{Binding DefaultDateTime}"
                             Margin="5"></DatePicker>
             </Grid>
         </GroupBox>
@@ -163,7 +187,8 @@
                            VerticalAlignment="Center"
                            Margin="5"></TextBlock>
                 <mah:NumericUpDown Minimum="0"
-                                   Value="0"
+                                   Value="{Binding SelectedNumberOfThreads}"
+                                   Maximum="{Binding MaxNumberOfThreads}"
                                    Margin="5"></mah:NumericUpDown>
                 <TextBlock Text="(0 for Auto-Select)"
                            Margin="5"
@@ -190,6 +215,7 @@
                 <Button Grid.Row="0"
                         Grid.Column="0"
                         Margin="5"
+                        Command="{Binding AnalyzeCommandWrapperCommand}"
                         Content="Analyze"></Button>
                 
                 <TextBlock Grid.Row="0"
@@ -199,21 +225,33 @@
                            Foreground="DarkGray"
                            Text="Extract EXIF and File Attribute Data for Selected Files"></TextBlock>
                 
+                
                 <Button Grid.Row="1"
                         Grid.Column="0"
+                        Command="{Binding ProcessCommand}"
                         Margin="5"
                         Content="Start"></Button>
                 
-                <TextBlock Grid.Row="1"
-                           Grid.Column="1"
-                           VerticalAlignment="Center"
-                           Margin="5"
-                           Foreground="DarkGray"
-                           Text="Begin the processing"></TextBlock>
+                <DockPanel Grid.Row="1" Grid.Column="1" LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Command="{Binding CancelProcessCommand}"
+                            Margin="5"
+                            Foreground="Red"
+                            Content="STOP"></Button>
+                    
+                    <TextBlock DockPanel.Dock="Left"
+                               VerticalAlignment="Center"
+                               Margin="5"
+                               Foreground="DarkGray"
+                               Text="Begin the processing"></TextBlock>
+                </DockPanel>
+                
+                
             </Grid>
         </GroupBox>
         <mah:MetroProgressBar Grid.Row="4"
-                              Value="50"
+                              Maximum="100"
+                              Value="{Binding ProgressValue}"
                               Margin="5"
                               Height="16"></mah:MetroProgressBar>
     </Grid>
