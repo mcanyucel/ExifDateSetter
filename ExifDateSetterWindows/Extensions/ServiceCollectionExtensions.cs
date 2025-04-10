@@ -60,6 +60,7 @@ internal static class ServiceCollectionExtensions
     public static IServiceCollection AddFactories(this IServiceCollection serviceCollection)
     {
         serviceCollection.AddSingleton<IDateCopyStrategyFactory, DateCopyStrategyFactory>();
+        serviceCollection.AddHttpClient();
         return serviceCollection;
     }
 

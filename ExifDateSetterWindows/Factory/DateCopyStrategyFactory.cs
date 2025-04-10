@@ -1,6 +1,5 @@
 ﻿using Core.Factory;
 using Core.Model;
-using Core.Service;
 using Core.Strategy;
 using ExifDateSetterWindows.Strategy;
 using Microsoft.Extensions.DependencyInjection;

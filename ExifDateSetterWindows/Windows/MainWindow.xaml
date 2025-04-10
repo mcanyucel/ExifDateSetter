@@ -15,6 +15,12 @@
     <mah:MetroWindow.Resources>
         <converters:ActionsDisplayConverter x:Key="ActionsDisplayConverter"></converters:ActionsDisplayConverter>
     </mah:MetroWindow.Resources>
+    <mah:MetroWindow.RightWindowCommands>
+        <mah:WindowCommands>
+            <Button Content="Check for Updates"
+                    Command="{Binding CheckForUpdatesCommand}"></Button>
+        </mah:WindowCommands>
+    </mah:MetroWindow.RightWindowCommands>
     
     <Grid>
         <Grid.RowDefinitions>
