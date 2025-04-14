@@ -13,6 +13,7 @@ public partial class MainViewModel(
     IProcessingService processingService, 
     IDialogService dialogService,
     UpdateEngine updateEngine,
+    IThemeService themeService,
     ILogger logger) : ObservableObject
 {
 
@@ -21,10 +22,8 @@ public partial class MainViewModel(
     public IEnumerable<ActionType> ActionList => Enum.GetValues<ActionType>();
     public IEnumerable<FileTypeSelectionItem> FileTypeSelectionItems => FileTypeSelectionItem.GetFileTypeSelectionItems();
     public IEnumerable<ExifDateTag> ExifDateTagsList => Enum.GetValues<ExifDateTag>();
-    
     public string WindowTitle => $"Exif Date Setter {App.AppVersion}";
     public IEnumerable<FileDateAttribute> FileDateAttributesList => Enum.GetValues<FileDateAttribute>();
-
     // ReSharper enable MemberCanBeMadeStatic.Global
     public int MaxNumberOfThreads => Environment.ProcessorCount;
 #pragma warning restore CA1822
@@ -41,6 +40,10 @@ public partial class MainViewModel(
     [NotifyCanExecuteChangedFor(nameof(AnalyzeCommandWrapperCommand))]
     [NotifyCanExecuteChangedFor(nameof(ProcessCommand))]
     [NotifyCanExecuteChangedFor(nameof(CancelProcessCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckForUpdatesCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SetUserThemeCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SetLightThemeCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SetDarkThemeCommand))]
     [ObservableProperty] private bool _isBusy;
     
     private readonly List<string> _folders = [];
@@ -169,6 +172,24 @@ public partial class MainViewModel(
         }
     }
 
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
+    private void SetUserTheme()
+    {
+        themeService.SetUserTheme();
+    }
+    
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
+    private void SetLightTheme()
+    {
+        themeService.SetTheme(IThemeService.ThemeLight, IThemeService.DefaultAccent, true);
+    }
+    
+    [RelayCommand(CanExecute = nameof(IsBusyCanExecute))]
+    private void SetDarkTheme()
+    {
+        themeService.SetTheme(IThemeService.ThemeDark, IThemeService.DefaultAccent, true);
+    }
+
     [RelayCommand(CanExecute = nameof(IsBusyCanExecuteInverse))]
     private void CancelProcess()
     {
@@ -179,28 +200,44 @@ public partial class MainViewModel(
     private async Task CheckForUpdates()
     {
         IsBusy = true;
-        var hasUpdate = await updateEngine.CheckForUpdates();
-        if (hasUpdate)
+        try
         {
-            var shouldStartUpdate = await dialogService.ShowQuestion(this, "Update Available", "An update is available. Do you want to download it?");
-            
-            if (shouldStartUpdate)
+            var hasUpdate = await updateEngine.CheckForUpdates();
+            if (hasUpdate)
             {
-                try
+                var shouldStartUpdate =
+                    await dialogService.ShowQuestion(this, "Update Available", "An update is available. Do you want to download it?");
+
+                if (shouldStartUpdate)
                 {
-                    await updateEngine.DownloadAndInstallUpdate();
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, "Failed to download and install update");
-                    await dialogService.ShowError(this, "Error", "Failed to download and install update.");
+                    try
+                    {
+                        await updateEngine.DownloadAndInstallUpdate();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Failed to download and install update");
+                        await dialogService.ShowError(this, "Error", "Failed to download and install update.");
+                    }
                 }
             }
+            else
+            {
+                await dialogService.ShowInformation(this, "No Update Available", "You are already using the latest version.");
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
-            await dialogService.ShowInformation(this, "No Update Available", "You are already using the latest version.");
+            // do nothing
         }
-        IsBusy = false;
+        catch (Exception ex)
+        {
+            logger.Error(ex, "Error during check for updates");
+            await dialogService.ShowError(this, "Error", $"An error occurred while checking for updates: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }
