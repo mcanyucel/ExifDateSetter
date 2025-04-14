@@ -9,7 +9,7 @@
         <UseWPF>true</UseWPF>
         <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
-        <FileVersion>1.1.0.0</FileVersion>
+        <FileVersion>1.2.0.0</FileVersion>
         <Company>MCY</Company>
     </PropertyGroup>
 
