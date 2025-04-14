@@ -8,6 +8,7 @@
         xmlns:dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
         dialog:DialogParticipation.Register="{Binding}"
         xmlns:converters="clr-namespace:ExifDateSetterWindows.Converters"
+        xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:viewmodel="clr-namespace:ExifDateSetterWindows.ViewModels"
         SizeToContent="Height"
         mc:Ignorable="d"
@@ -19,8 +20,27 @@
         <mah:WindowCommands>
             <Button Content="Check for Updates"
                     Command="{Binding CheckForUpdatesCommand}"></Button>
+            <mah:ToggleSwitch OnCommand="{Binding SetLightThemeCommand}"
+                              OffCommand="{Binding SetDarkThemeCommand}"
+                Foreground="{DynamicResource MahApps.Brushes.Control.Background}">
+                <mah:ToggleSwitch.OnContent>
+                    <TextBlock Text="Light"
+                              ></TextBlock>
+                </mah:ToggleSwitch.OnContent>
+                <mah:ToggleSwitch.OffContent>
+                    <TextBlock Text="Dark"
+                              ></TextBlock>
+                </mah:ToggleSwitch.OffContent>
+            </mah:ToggleSwitch>
         </mah:WindowCommands>
+        
     </mah:MetroWindow.RightWindowCommands>
+    <behaviors:Interaction.Triggers>
+        <behaviors:EventTrigger EventName="ContentRendered">
+            <behaviors:InvokeCommandAction Command="{Binding SetUserThemeCommand}"></behaviors:InvokeCommandAction>
+        </behaviors:EventTrigger>
+        
+    </behaviors:Interaction.Triggers>
     
     <Grid>
         <Grid.RowDefinitions>

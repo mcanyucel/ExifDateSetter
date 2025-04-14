@@ -1,4 +1,5 @@
-﻿using Core.Factory;
+﻿using System.IO;
+using Core.Factory;
 using Core.Service;
 using Core.Strategy;
 using ExifDateSetterWindows.AutoUpdate;
@@ -7,6 +8,7 @@ using ExifDateSetterWindows.Services;
 using ExifDateSetterWindows.Strategy;
 using ExifDateSetterWindows.ViewModels;
 using MahApps.Metro.Controls.Dialogs;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -64,9 +66,29 @@ internal static class ServiceCollectionExtensions
         return serviceCollection;
     }
 
-    public static IServiceCollection AddUpdateServices(this IServiceCollection services)
+    public static IServiceCollection AddUpdateServices(this IServiceCollection serviceCollection)
     {
-        services.AddSingleton<UpdateEngine>();
-        return services;
+        serviceCollection.AddSingleton<UpdateEngine>();
+        return serviceCollection;
+    }
+
+    public static IServiceCollection AddPreferencesServices(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddSingleton<IPreferenceService, WindowsPreferenceService>(provider =>
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            var configuration = builder.Build();
+            var logger = provider.GetRequiredService<ILogger>();
+            return new WindowsPreferenceService(configuration, logger);
+        });
+        return serviceCollection;
+    }
+    
+    public static IServiceCollection AddThemeServices(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddSingleton<IThemeService, MahappsThemeService>();
+        return serviceCollection;
     }
 }

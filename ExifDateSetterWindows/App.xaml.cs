@@ -67,6 +67,8 @@ public partial class App
             .AddFactories()
             .AddDateCopyStrategies()
             .AddUpdateServices()
+            .AddPreferencesServices()
+            .AddThemeServices()
             .AddLoggerServices();
         return serviceCollection.BuildServiceProvider();
     }
